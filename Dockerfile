@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -6,13 +6,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --omit=dev
 
 # Copy app source
 COPY . .
 
-# Build the web version
-RUN npm run build:web
+# Build the web version using npx directly
+RUN npx --yes expo@latest export --platform web || npx expo export --platform web
 
 # Expose port (default 3000, Render will override)
 EXPOSE 3000
