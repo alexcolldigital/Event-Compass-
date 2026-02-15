@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '../../context/authContext';
-import { apiClient } from '../../utils/apiClient';
+import apiClient from '../../utils/apiClient';
 import { colors, spacing } from '../../styles/theme';
 
 export default function MyServicesScreen({ navigation }) {

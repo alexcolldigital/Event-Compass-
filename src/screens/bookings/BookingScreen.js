@@ -143,7 +143,15 @@ export default function BookingsManagementScreen({ navigation }) {
       <Text style={styles.emptySubtitle}>Start by booking a service</Text>
       <TouchableOpacity
         style={styles.exploreButton}
-        onPress={() => navigation.navigate('SearchTab')}
+        onPress={() => {
+          const root = navigation.getParent()?.getParent();
+          if (!root) return;
+          if (user?.role === 'service_provider') {
+            root.navigate('ProviderDashboard', { screen: 'ServicesTab' });
+          } else {
+            root.navigate('ClientTabs', { screen: 'SearchTab' });
+          }
+        }}
       >
         <Text style={styles.exploreButtonText}>Explore Services</Text>
       </TouchableOpacity>

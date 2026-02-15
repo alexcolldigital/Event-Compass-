@@ -208,6 +208,14 @@ export const useAuthStore = create((set, get) => ({
     try {
       const response = await axios.put(`${API_URL}/auth/profile`, profileData);
       const updatedUser = response.data.data.user;
+      const newToken = response.data.data.token;
+
+      // If server returned a new token (e.g. after role change), persist it and update axios header
+      if (newToken) {
+        await storage.setItem('authToken', newToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        set({ token: newToken });
+      }
 
       await storage.setItem('userData', JSON.stringify(updatedUser));
 

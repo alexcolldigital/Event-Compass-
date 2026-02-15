@@ -119,7 +119,15 @@ export default function MessagesScreen({ navigation }) {
       <Text style={styles.emptySubtitle}>Start a conversation by booking a service</Text>
       <TouchableOpacity
         style={styles.startButton}
-        onPress={() => navigation.navigate('SearchTab')}
+        onPress={() => {
+          const root = navigation.getParent()?.getParent();
+          if (!root) return;
+          if (user?.role === 'service_provider') {
+            root.navigate('ProviderDashboard', { screen: 'ServicesTab' });
+          } else {
+            root.navigate('ClientTabs', { screen: 'SearchTab' });
+          }
+        }}
       >
         <Text style={styles.startButtonText}>Find Services</Text>
       </TouchableOpacity>

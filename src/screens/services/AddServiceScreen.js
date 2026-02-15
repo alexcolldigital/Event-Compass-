@@ -23,7 +23,7 @@ import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '../../context/authContext';
-import { apiClient } from '../../utils/apiClient';
+import apiClient from '../../utils/apiClient';
 import { colors, spacing } from '../../styles/theme';
 
 const SERVICE_CATEGORIES = [

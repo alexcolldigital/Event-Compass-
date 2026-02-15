@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useServicesStore } from '../../context/servicesContext';
 import { useAuthStore } from '../../context/authContext';
+import { useCartStore } from '../../context/cartContext';
 import styles from '../../styles/homeStyles';
 import { colors, spacing } from '../../styles/theme';
 
@@ -26,6 +27,7 @@ const screenWidth = Dimensions.get('window').width;
 export default function HomeScreen({ navigation }) {
   const { fetchServices, services, isLoading } = useServicesStore();
   const { user, logout } = useAuthStore();
+  const { cartItems } = useCartStore();
   const [numColumns, setNumColumns] = useState(2);
 
   useEffect(() => {
@@ -38,6 +40,49 @@ export default function HomeScreen({ navigation }) {
       setNumColumns(3);
     }
   }, []);
+
+  // Set up header with cart button
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.getParent()?.getParent()?.navigate('Cart')}
+          style={{
+            position: 'relative',
+            marginRight: spacing.md,
+            padding: spacing.sm,
+          }}
+        >
+          <Ionicons name="shopping-cart" size={24} color={colors.primary} />
+          {cartItems.length > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                backgroundColor: colors.danger,
+                borderRadius: 10,
+                width: 20,
+                height: 20,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.white,
+                  fontSize: 11,
+                  fontWeight: '700',
+                }}
+              >
+                {cartItems.length > 99 ? '99+' : cartItems.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, cartItems.length]);
 
   useEffect(() => {
     // Fetch featured services on screen load
@@ -135,6 +180,41 @@ export default function HomeScreen({ navigation }) {
     ]);
   };
 
+  const navigateToTab = (clientTab, providerTab) => () => {
+    const role = user?.role;
+    try {
+      const parent = navigation.getParent();
+      const root = parent?.getParent();
+      console.log('navigateToTab:', { role, clientTab, providerTab, parentExists: !!parent, rootExists: !!root });
+
+      if (!root) {
+        // Fallback: try direct navigate on current navigator
+        if (clientTab === 'Cart') {
+          navigation.navigate('Cart');
+        } else {
+          navigation.navigate(clientTab);
+        }
+        return;
+      }
+
+      if (role === 'service_provider') {
+        // Provider app: navigate to ProviderDashboard tab navigator
+        const screen = providerTab === 'Cart' ? 'DashboardTab' : providerTab || clientTab;
+        root.navigate('ProviderDashboard', { screen });
+        return;
+      }
+
+      // Client app: Cart is a Stack modal, others are tabs
+      if (clientTab === 'Cart') {
+        root.navigate('Cart');
+      } else {
+        root.navigate('ClientTabs', { screen: clientTab });
+      }
+    } catch (err) {
+      console.error('Navigation error in navigateToTab:', err);
+    }
+  };
+
   const QuickActionCard = ({ icon, label, onPress }) => (
     <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.actionCardIcon}>
@@ -165,6 +245,51 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Cart Banner (shows when cart has items) */}
+      {cartItems.length > 0 && (
+        <TouchableOpacity
+          onPress={() => navigation.getParent()?.getParent()?.navigate('Cart')}
+          style={{
+            backgroundColor: colors.primary,
+            marginHorizontal: spacing.lg,
+            marginVertical: spacing.md,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            borderRadius: 12,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
+        >
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: colors.white,
+                marginBottom: spacing.xs,
+              }}
+            >
+              🛒 {cartItems.length} item{cartItems.length !== 1 ? 's' : ''} in your cart
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: colors.white + '99',
+              }}
+            >
+              Ready to check out?
+            </Text>
+          </View>
+          <Ionicons name="arrow-forward" size={20} color={colors.white} />
+        </TouchableOpacity>
+      )}
+
       {/* Quick Actions */}
       <View style={styles.quickActionsContainer}>
         {user?.role === 'service_provider' && (
@@ -177,17 +302,22 @@ export default function HomeScreen({ navigation }) {
         <QuickActionCard
           icon="search"
           label="Search"
-          onPress={() => navigation.navigate('SearchTab')}
+          onPress={navigateToTab('SearchTab', 'ServicesTab')}
+        />
+        <QuickActionCard
+          icon="shopping-cart"
+          label={`Cart${cartItems.length > 0 ? ` (${cartItems.length})` : ''}`}
+          onPress={navigateToTab('Cart', 'ServicesTab')}
         />
         <QuickActionCard
           icon="calendar"
           label="Bookings"
-          onPress={() => navigation.navigate('BookingsTab')}
+          onPress={navigateToTab('BookingsTab', 'BookingsTab')}
         />
         <QuickActionCard
           icon="chatbubbles"
           label="Messages"
-          onPress={() => navigation.navigate('MessagesTab')}
+          onPress={navigateToTab('MessagesTab', 'MessagesTab')}
         />
       </View>
 
@@ -195,7 +325,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Featured Services</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SearchTab')}>
+          <TouchableOpacity onPress={navigateToTab('SearchTab', 'ServicesTab')}>
             <Text style={styles.seeAllLink}>See All →</Text>
           </TouchableOpacity>
         </View>
@@ -243,7 +373,10 @@ export default function HomeScreen({ navigation }) {
                 key={category}
                 style={styles.categoryTag}
                 onPress={() =>
-                  navigation.navigate('SearchTab', { category: category.toLowerCase() })
+                  navigation.getParent()?.getParent()?.navigate(
+                    user?.role === 'service_provider' ? 'ServicesTab' : 'SearchTab',
+                    { category: category.toLowerCase() }
+                  )
                 }
                 activeOpacity={0.8}
               >
@@ -258,7 +391,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Trending Now</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SearchTab')}>
+          <TouchableOpacity onPress={navigateToTab('SearchTab', 'ServicesTab')}>
             <Text style={styles.seeAllLink}>View More →</Text>
           </TouchableOpacity>
         </View>

@@ -64,6 +64,75 @@ export default function ProfileScreen({ navigation }) {
     Alert.alert('Help & Support', 'Help page is coming soon');
   };
 
+  const handleSwitchRole = async () => {
+    const newRole = user?.role === 'service_provider' ? 'client' : 'service_provider';
+    const readable = newRole === 'service_provider' ? 'Service Provider' : 'Client';
+
+    const confirmed = await new Promise((resolve) => {
+      Alert.alert(
+        'Switch Role',
+        `Are you sure you want to switch to ${readable}?`,
+        [
+          { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+          { text: 'Switch', onPress: () => resolve(true) },
+        ],
+        { cancelable: false }
+      );
+    });
+
+    if (!confirmed) return;
+
+    try {
+      console.log('Role switch initiated:', { from: user?.role, to: newRole });
+      const res = await updateProfile({ role: newRole });
+      console.log('Role switch response:', res);
+      Alert.alert('Success', `Role switched to ${readable}`);
+
+      // After role change, attempt to reset navigation to the appropriate root stack.
+      // We try multiple fallbacks depending on navigator depth.
+      try {
+        // Preferred: reset at current navigator
+        if (newRole === 'service_provider') {
+          navigation.reset({ index: 0, routes: [{ name: 'ProviderDashboard' }] });
+        } else {
+          navigation.reset({ index: 0, routes: [{ name: 'ClientTabs', params: { screen: 'HomeTab' } }] });
+        }
+      } catch (errReset) {
+        // Fallback: try resetting parent navigators
+        try {
+          const parent = navigation.getParent && navigation.getParent();
+          const grand = parent && parent.getParent && parent.getParent();
+          if (grand && grand.reset) {
+            if (newRole === 'service_provider') {
+              grand.reset({ index: 0, routes: [{ name: 'ProviderDashboard' }] });
+            } else {
+              grand.reset({ index: 0, routes: [{ name: 'ClientTabs', params: { screen: 'HomeTab' } }] });
+            }
+          } else if (parent && parent.reset) {
+            if (newRole === 'service_provider') {
+              parent.reset({ index: 0, routes: [{ name: 'ProviderDashboard' }] });
+            } else {
+              parent.reset({ index: 0, routes: [{ name: 'ClientTabs', params: { screen: 'HomeTab' } }] });
+            }
+          } else {
+            // Final fallback: navigate to the top-level route names
+            if (newRole === 'service_provider') {
+              navigation.navigate('ProviderDashboard');
+            } else {
+              navigation.navigate('ClientTabs', { screen: 'HomeTab' });
+            }
+          }
+        } catch (err2) {
+          console.warn('Role switch navigation fallback failed', err2);
+        }
+      }
+    } catch (error) {
+      console.error('Role switch failed', error);
+      const message = error?.response?.data?.message || error?.message || 'Failed to switch role';
+      Alert.alert('Error', message);
+    }
+  };
+
   const handleLogout = async () => {
     console.log('================================================');
     console.log('🔴 LOGOUT INITIATED IN PROFILESCREEN');
@@ -297,6 +366,30 @@ export default function ProfileScreen({ navigation }) {
               </>
             )}
           </View>
+
+            {/* Role switch card */}
+            <View style={[styles.infoSection, { marginTop: 8 }]}> 
+              <View style={styles.infoItem}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="swap-vertical" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Current Role</Text>
+                  <Text style={styles.infoValue}>{user?.role === 'service_provider' ? 'Service Provider' : 'Client'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <TouchableOpacity
+                style={[styles.saveButton, { marginTop: spacing.md }]}
+                onPress={handleSwitchRole}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="swap-horizontal" size={18} color="white" />
+                <Text style={styles.saveButtonText}>{user?.role === 'service_provider' ? 'Switch to Client' : 'Switch to Service Provider'}</Text>
+              </TouchableOpacity>
+            </View>
 
           {/* Service Provider Section */}
           {user?.role === 'service_provider' && (

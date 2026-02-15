@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { useAuthStore } from '../context/authContext';
+import { useCartStore } from '../context/cartContext';
 
 // Import Screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -17,6 +18,8 @@ import MessagesScreen from '../screens/messages/MessagesScreen';
 import BookingsManagementScreen from '../screens/bookings/BookingsManagementScreen';
 import ServiceListScreen from '../screens/services/ServiceListScreen';
 import AddServiceScreen from '../screens/services/AddServiceScreen';
+import CartScreen from '../screens/cart/CartScreen';
+import CheckoutScreen from '../screens/bookings/CheckoutScreen';
 
 // Icon imports
 import { Ionicons } from '@expo/vector-icons';
@@ -43,10 +46,12 @@ const AuthStack = () => {
 };
 
 /**
- * Main App Stack Navigator
- * Client/User app navigation
+ * Client Tab Navigator
+ * Bottom tabs for client navigation
  */
-const ClientAppStack = () => {
+const ClientTabs = () => {
+  const { cartItems } = useCartStore();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -88,6 +93,7 @@ const ClientAppStack = () => {
         options={{
           title: 'Event Compass',
           tabBarLabel: 'Home',
+          tabBarBadge: cartItems.length > 0 ? cartItems.length : null,
         }}
       />
       <Tab.Screen
@@ -123,6 +129,60 @@ const ClientAppStack = () => {
         }}
       />
     </Tab.Navigator>
+  );
+};
+
+/**
+ * Main App Stack Navigator
+ * Client/User app navigation with cart and checkout modals
+ */
+const ClientAppStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="ClientTabs"
+        component={ClientTabs}
+        options={{
+          animationEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name="ServiceDetail"
+        component={ServiceDetailScreen}
+        options={{
+          title: 'Service Details',
+          headerShown: true,
+          headerBackTitleVisible: false,
+          animationEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="Cart"
+        component={CartScreen}
+        options={{
+          title: 'Shopping Cart',
+          headerShown: true,
+          headerBackTitleVisible: false,
+          presentation: 'modal',
+          animationEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="Checkout"
+        component={CheckoutScreen}
+        options={{
+          title: 'Checkout',
+          headerShown: true,
+          headerBackTitleVisible: false,
+          presentation: 'modal',
+          animationEnabled: true,
+        }}
+      />
+    </Stack.Navigator>
   );
 };
 
